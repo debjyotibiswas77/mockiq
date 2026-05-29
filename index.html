@@ -1312,5 +1312,22 @@ function sylStats(subj){const topics=mergedTopics(subj);const cols=mergedCols(su
 function refreshSylStats(subj){const s=sylStats(subj);const pEl=document.getElementById(`syl-pct-${subj}`);const mEl=document.getElementById(`syl-mini-${subj}`);const bEl=document.getElementById(`syl-badge-${subj}`);if(pEl)pEl.textContent=s.pct+'%';if(mEl)mEl.style.width=s.pct+'%';if(bEl)bEl.textContent=mergedTopics(subj).length+' topics';updateSylOverview();}
 function updateSylOverview(){['phy','che','bio'].forEach(subj=>{const s=sylStats(subj);const pEl=document.getElementById(`syl-ov-${subj}`);const bEl=document.getElementById(`syl-bar-${subj}`);const sEl=document.getElementById(`syl-ov-${subj}-sub`);if(pEl)pEl.textContent=s.pct+'%';if(bEl)bEl.style.width=s.pct+'%';if(sEl)sEl.textContent=`${s.done} / ${s.total} done`;});}
 </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    measurementId: "YOUR_MEASUREMENT_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  getAnalytics(app);
+</script>
 </body>
 </html>
