@@ -514,7 +514,8 @@
         </div>
         <div class="trend-controls">
           <span style="font-size:12px;color:var(--text-muted);margin-right:4px;">Year:</span>
-          <button class="trend-year-btn active">2025</button>
+          <button class="trend-year-btn active" onclick="switchTrendYear(2025,this)">2025</button>
+          <button class="trend-year-btn" onclick="switchTrendYear(2024,this)">2024</button>
         </div>
       </div>
       <div class="rank-calc-card">
@@ -544,10 +545,11 @@
             <div class="rank-result-score"><div class="val" id="res-marks">—</div><div class="lbl">Raw Marks</div></div>
             <div class="rank-result-divider"></div>
             <div class="rank-result-range">
-              <div class="range-title">Estimated Rank Range</div>
-              <div class="range-row"><span class="range-badge range-optimistic">Optimistic (+10)</span> <span id="res-opt">—</span></div>
-              <div class="range-row"><span class="range-badge range-expected">Expected (raw)</span> <span id="res-exp">—</span></div>
-              <div class="range-row"><span class="range-badge range-conservative">Conservative (−10)</span> <span id="res-con">—</span></div>
+              <div class="range-title">Expected Rank Range</div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-top:10px;">
+                <span id="res-range-val" style="font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--accent-blue);">—</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Based on ±10 mark normalisation buffer</div>
             </div>
           </div>
           <div class="rank-result-note" id="res-note">—</div>
@@ -702,6 +704,7 @@
 const YEAR_DATA = {
   2025: {
     total: 1101104,
+    type: 'range',
     ranges: [
       {from:651,to:686,candidates:73},{from:601,to:650,candidates:1259},{from:551,to:600,candidates:10658},
       {from:501,to:550,candidates:39521},{from:451,to:500,candidates:69503},{from:401,to:450,candidates:88239},
@@ -709,59 +712,129 @@ const YEAR_DATA = {
       {from:201,to:250,candidates:198346},{from:144,to:200,candidates:303040},
     ]
   },
-  2024:{total:2387849,ranges:[{from:715,to:720,candidates:67},{from:700,to:714,candidates:1418},{from:650,to:699,candidates:8274},{from:600,to:649,candidates:24856},{from:550,to:599,candidates:61327},{from:500,to:549,candidates:124083},{from:450,to:499,candidates:208744},{from:400,to:449,candidates:297350},{from:350,to:399,candidates:365189},{from:300,to:349,candidates:428540},{from:250,to:299,candidates:466051},{from:144,to:249,candidates:401950}]},
-  2023:{total:2038596,ranges:[{from:715,to:720,candidates:2},{from:700,to:714,candidates:580},{from:650,to:699,candidates:5842},{from:600,to:649,candidates:21534},{from:550,to:599,candidates:58426},{from:500,to:549,candidates:118093},{from:450,to:499,candidates:188204},{from:400,to:449,candidates:265344},{from:350,to:399,candidates:333592},{from:300,to:349,candidates:388279},{from:250,to:299,candidates:400800},{from:144,to:249,candidates:257900}]},
-  2022:{total:1872343,ranges:[{from:715,to:720,candidates:1},{from:700,to:714,candidates:240},{from:650,to:699,candidates:4892},{from:600,to:649,candidates:19230},{from:550,to:599,candidates:52106},{from:500,to:549,candidates:107450},{from:450,to:499,candidates:171330},{from:400,to:449,candidates:240215},{from:350,to:399,candidates:302170},{from:300,to:349,candidates:354700},{from:250,to:299,candidates:371009},{from:144,to:249,candidates:249000}]}
+  2024:{
+    total: 1200000,
+    type: 'point',
+    points:[
+      {marks:720,rank:1},{marks:715,rank:177},{marks:705,rank:542},{marks:700,rank:2250},
+      {marks:690,rank:4406},{marks:685,rank:6232},{marks:675,rank:11600},{marks:671,rank:13923},
+      {marks:665,rank:17800},{marks:656,rank:25500},{marks:650,rank:29000},{marks:645,rank:33848},
+      {marks:638,rank:40116},{marks:630,rank:47810},{marks:627,rank:51119},{marks:615,rank:65000},
+      {marks:606,rank:70000},{marks:605,rank:76000},{marks:603,rank:77000},{marks:591,rank:91527},
+      {marks:550,rank:144000},{marks:544,rank:149119},{marks:511,rank:193527},{marks:500,rank:209000},
+      {marks:451,rank:285550},{marks:448,rank:291306},{marks:414,rank:351425},{marks:380,rank:420000},
+      {marks:331,rank:565970},{marks:287,rank:657138},{marks:251,rank:774559},{marks:142,rank:1200000}
+    ]
+  },
+  2023:{total:2038596,type:'range',ranges:[{from:715,to:720,candidates:2},{from:700,to:714,candidates:580},{from:650,to:699,candidates:5842},{from:600,to:649,candidates:21534},{from:550,to:599,candidates:58426},{from:500,to:549,candidates:118093},{from:450,to:499,candidates:188204},{from:400,to:449,candidates:265344},{from:350,to:399,candidates:333592},{from:300,to:349,candidates:388279},{from:250,to:299,candidates:400800},{from:144,to:249,candidates:257900}]},
+  2022:{total:1872343,type:'range',ranges:[{from:715,to:720,candidates:1},{from:700,to:714,candidates:240},{from:650,to:699,candidates:4892},{from:600,to:649,candidates:19230},{from:550,to:599,candidates:52106},{from:500,to:549,candidates:107450},{from:450,to:499,candidates:171330},{from:400,to:449,candidates:240215},{from:350,to:399,candidates:302170},{from:300,to:349,candidates:354700},{from:250,to:299,candidates:371009},{from:144,to:249,candidates:249000}]}
 };
 
 function buildCumulativeRanks(yearKey){
   const d=YEAR_DATA[yearKey];if(!d)return null;
+  if(d.type==='point'){
+    // Convert point data into pseudo-ranges for the table display
+    const pts=[...d.points].sort((a,b)=>b.marks-a.marks);
+    return pts.map((p,i)=>{
+      const next=pts[i+1];
+      return{from:next?next.marks+1:142,to:p.marks,rankFrom:p.rank,rankTo:next?next.rank-1:p.rank,candidates:next?next.rank-p.rank:0,isSingle:true,singleMark:p.marks,singleRank:p.rank};
+    });
+  }
   const sorted=[...d.ranges].sort((a,b)=>b.from-a.from);
   let cum=0;
   return sorted.map(r=>{const rankFrom=cum+1;cum+=r.candidates;return{...r,rankFrom,rankTo:cum};});
 }
+function estimateRankPoint(marks,yearKey){
+  // For point-based data: interpolate between known points
+  const d=YEAR_DATA[yearKey];if(!d||d.type!=='point')return null;
+  const pts=[...d.points].sort((a,b)=>b.marks-a.marks);
+  if(marks>=pts[0].marks)return pts[0].rank;
+  if(marks<=pts[pts.length-1].marks)return pts[pts.length-1].rank;
+  for(let i=0;i<pts.length-1;i++){
+    const hi=pts[i],lo=pts[i+1];
+    if(marks<=hi.marks&&marks>=lo.marks){
+      const t=(hi.marks-marks)/(hi.marks-lo.marks);
+      return Math.round(hi.rank+t*(lo.rank-hi.rank));
+    }
+  }
+  return d.total;
+}
 function estimateRank(marks,yearKey){
+  const d=YEAR_DATA[yearKey];if(!d)return null;
+  if(d.type==='point')return estimateRankPoint(marks,yearKey);
   const rows=buildCumulativeRanks(yearKey);if(!rows)return null;
   for(const r of rows){if(marks>=r.from&&marks<=r.to){const p=(r.to-marks)/(r.to-r.from+1);return Math.max(1,Math.round(r.rankFrom+p*(r.rankTo-r.rankFrom)));}}
   if(marks>rows[0].to)return 1;
-  return YEAR_DATA[yearKey].total;
+  return d.total;
 }
 let selectedYear=2025,trendChart=null;
+function switchTrendYear(year,btn){
+  selectedYear=year;
+  document.querySelectorAll('.trend-year-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderTrendSection(year);
+  // Re-run calc if marks already entered
+  const m=parseInt(document.getElementById('calc-marks').value);
+  if(!isNaN(m)&&m>=0&&m<=720)calculateRank();
+}
 function liveCalc(){const m=parseInt(document.getElementById('calc-marks').value);if(!isNaN(m)&&m>=0&&m<=720)calculateRank();}
 function renderTrendSection(year){
   const d=YEAR_DATA[year];if(!d)return;
-  const rows=buildCumulativeRanks(year);
-  document.getElementById('trend-chart-title').textContent=`${year} Marks Distribution`;
+  document.getElementById('trend-chart-title').textContent=year===2024?`${year} Marks vs Rank`:`${year} Marks Distribution`;
   document.getElementById('trend-chart-sub').textContent=`Total candidates: ${d.total.toLocaleString('en-IN')}`;
   document.getElementById('trend-table-title').textContent=`${year} Marks vs Rank`;
   const tbody=document.getElementById('trend-table-body');
-  tbody.innerHTML=rows.map(r=>`<tr><td>${r.from}–${r.to}</td><td>${r.candidates.toLocaleString('en-IN')}</td><td>${r.rankFrom.toLocaleString('en-IN')}–${r.rankTo.toLocaleString('en-IN')}</td></tr>`).join('');
-  const sorted=[...rows].sort((a,b)=>a.from-b.from);
-  const labels=sorted.map(r=>`${r.from}–${r.to}`),values=sorted.map(r=>r.candidates);
   const ctx=document.getElementById('chart-trend');
   if(trendChart)trendChart.destroy();
-  trendChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Candidates',data:values,backgroundColor:values.map((_,i)=>{const idx=i/values.length;if(idx>0.75)return'rgba(34,197,94,0.75)';if(idx>0.5)return'rgba(59,130,246,0.75)';if(idx>0.25)return'rgba(234,179,8,0.75)';return'rgba(239,68,68,0.65)';}),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tooltipOptions(),callbacks:{label:ctx=>` ${ctx.parsed.y.toLocaleString('en-IN')} candidates`}}},scales:{x:{...baseScaleOptions().x,ticks:{...baseScaleOptions().x.ticks,maxRotation:45}},y:{...baseScaleOptions().y}}}});
+
+  if(d.type==='point'){
+    const pts=[...d.points].sort((a,b)=>b.marks-a.marks);
+    // Table: marks | rank
+    tbody.innerHTML=pts.map(p=>`<tr><td>${p.marks}</td><td>—</td><td>${p.rank.toLocaleString('en-IN')}</td></tr>`).join('');
+    // Line chart: x=marks, y=rank
+    const sortedPts=[...pts].sort((a,b)=>a.marks-b.marks);
+    const labels=sortedPts.map(p=>String(p.marks));
+    const values=sortedPts.map(p=>p.rank);
+    trendChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Rank',data:values,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',borderWidth:2.5,pointRadius:4,pointHoverRadius:6,tension:0.3,fill:true}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tooltipOptions(),callbacks:{title:ctxArr=>`${ctxArr[0].label} marks`,label:ctx=>` Rank ~${ctx.parsed.y.toLocaleString('en-IN')}`}}},scales:{x:{...baseScaleOptions().x,title:{display:true,text:'Marks',color:isDark()?'#505870':'#9ca3af',font:{family:"'Google Sans'",size:11}},ticks:{...baseScaleOptions().x.ticks,maxRotation:45}},y:{...baseScaleOptions().y,reverse:false,title:{display:true,text:'Rank',color:isDark()?'#505870':'#9ca3af',font:{family:"'Google Sans'",size:11}},ticks:{...baseScaleOptions().y.ticks,callback:v=>v>=1000?Math.round(v/1000)+'K':v}}}}});
+  } else {
+    const rows=buildCumulativeRanks(year);
+    tbody.innerHTML=rows.map(r=>`<tr><td>${r.from}–${r.to}</td><td>${r.candidates.toLocaleString('en-IN')}</td><td>${r.rankFrom.toLocaleString('en-IN')}–${r.rankTo.toLocaleString('en-IN')}</td></tr>`).join('');
+    const sorted=[...rows].sort((a,b)=>a.from-b.from);
+    const labels=sorted.map(r=>`${r.from}–${r.to}`),values=sorted.map(r=>r.candidates);
+    trendChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Candidates',data:values,backgroundColor:values.map((_,i)=>{const idx=i/values.length;if(idx>0.75)return'rgba(34,197,94,0.75)';if(idx>0.5)return'rgba(59,130,246,0.75)';if(idx>0.25)return'rgba(234,179,8,0.75)';return'rgba(239,68,68,0.65)';}),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tooltipOptions(),callbacks:{label:ctx=>` ${ctx.parsed.y.toLocaleString('en-IN')} candidates`}}},scales:{x:{...baseScaleOptions().x,ticks:{...baseScaleOptions().x.ticks,maxRotation:45}},y:{...baseScaleOptions().y}}}});
+  }
 }
 function loadMockScore(){const sel=document.getElementById('calc-mock-score');const val=sel.value;if(!val)return;const m=mocks.find(x=>x.id===val);if(m){document.getElementById('calc-marks').value=m.phy+m.che+m.bio;calculateRank();}}
 function populateMockSelector(){const sel=document.getElementById('calc-mock-score');sel.innerHTML='<option value="">— pick from my mocks —</option>';[...mocks].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(m=>{const total=m.phy+m.che+m.bio;const opt=document.createElement('option');opt.value=m.id;opt.textContent=`${m.name} (${total})`;sel.appendChild(opt);});}
 function calculateRank(){
   const raw=parseInt(document.getElementById('calc-marks').value);
   if(isNaN(raw)||raw<0||raw>720){showToast('Enter valid marks between 0 and 720','error');return;}
-  const year=2025,clamp=(v)=>Math.min(686,Math.max(144,v));
+  const year=selectedYear;
+  const d=YEAR_DATA[year];
+  const minMark=d.type==='point'?d.points[d.points.length-1].marks:144;
+  const maxMark=d.type==='point'?d.points[0].marks:(year===2025?686:720);
+  const clamp=(v)=>Math.min(maxMark,Math.max(minMark,v));
   const rankExp=estimateRank(clamp(raw),year),rankOpt=estimateRank(clamp(raw+10),year),rankCon=estimateRank(clamp(raw-10),year);
   document.getElementById('res-marks').textContent=raw;
-  document.getElementById('res-opt').textContent=rankOpt?`~${rankOpt.toLocaleString('en-IN')}`:'—';
-  document.getElementById('res-exp').textContent=rankExp?`~${rankExp.toLocaleString('en-IN')}`:'—';
-  document.getElementById('res-con').textContent=rankCon?`~${rankCon.toLocaleString('en-IN')}`:'—';
+  const lo=rankOpt?rankOpt.toLocaleString('en-IN'):'—';
+  const hi=rankCon?rankCon.toLocaleString('en-IN'):'—';
+  document.getElementById('res-range-val').textContent=`${lo} – ${hi}`;
   let note='';
   if(raw<144)note='Below the qualifying cutoff (144). You would not be eligible for counselling. Focus heavily on NCERT basics.';
   else if(rankExp<=50000)note='Strong contention for a government MBBS seat. Keep your preparation consistent.';
   else if(rankExp<=150000)note='You may qualify for MBBS in deemed/private universities. A few more marks can make a big difference.';
   else if(rankExp<=400000)note='You qualify but competition is stiff. Consider BDS/BAMS/private MBBS as backup options.';
   else note='Below typical MBBS cutoffs. Strong revision of Biology and Chemistry can make a big difference.';
-  document.getElementById('res-note').textContent=note+' (Based on 2025 data)';
+  document.getElementById('res-note').textContent=note+` (Based on ${year} data)`;
   document.getElementById('rank-result').classList.add('visible');
-  document.querySelectorAll('#trend-table-body tr').forEach(tr=>{tr.classList.remove('your-score-row');const cell=tr.querySelector('td');if(cell){const parts=cell.textContent.split('–').map(Number);if(parts.length===2&&raw>=parts[0]&&raw<=parts[1])tr.classList.add('your-score-row');}});
+  // Highlight matching row in table
+  document.querySelectorAll('#trend-table-body tr').forEach(tr=>{
+    tr.classList.remove('your-score-row');
+    const cell=tr.querySelector('td');if(!cell)return;
+    const txt=cell.textContent;
+    if(txt.includes('–')){const parts=txt.split('–').map(Number);if(parts.length===2&&raw>=parts[0]&&raw<=parts[1])tr.classList.add('your-score-row');}
+    else if(parseInt(txt)===raw)tr.classList.add('your-score-row');
+  });
 }
 
 // ============================================================
