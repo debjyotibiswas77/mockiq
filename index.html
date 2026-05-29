@@ -430,7 +430,7 @@
         <div class="page-title" id="page-title">Dashboard</div>
       </div>
       <div class="topbar-right">
-        <div class="search-box">
+        <div id="search-box-wrap" class="search-box">
           <span class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input type="text" id="search-input" placeholder="Search mocks..." oninput="filterMocks()">
         </div>
@@ -1084,6 +1084,8 @@ function navigate(section,el){
   document.getElementById('page-title').textContent=titles[section]||section;
   const btn=document.getElementById('btn-add-mock');
   if(btn){btn.style.display=section==='mocks'?'':'none';btn.textContent='+ Add Mock';}
+  const search=document.getElementById('search-box-wrap');
+  if(search)search.style.display=section==='mocks'?'':'none';
   if(section==='mocks')switchMocksTab('completed');
   if(section==='charts')setTimeout(initCharts,50);
   if(section==='goals'){updateGoal();setTimeout(renderDeviationChart,50);}
@@ -1186,6 +1188,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const savedTheme=localStorage.getItem(LS_THEME)||'dark';
   applyTheme(savedTheme);
   const btn=document.getElementById('btn-add-mock');if(btn)btn.style.display='none';
+  const search=document.getElementById('search-box-wrap');if(search)search.style.display='none';
   refreshAll();buildSyllabus();
   renderTrendSection(2025);
 });
